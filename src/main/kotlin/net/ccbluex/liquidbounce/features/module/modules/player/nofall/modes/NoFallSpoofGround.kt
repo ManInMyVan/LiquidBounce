@@ -39,7 +39,11 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket
  * This mode spoofs the 'onGround' flag in PlayerMoveC2SPacket to prevent fall damage.
  */
 internal object NoFallSpoofGround : Choice("SpoofGround") {
-    private val fallDistance = choices("FallDistance", DistanceMode.Smart, arrayOf(DistanceMode.Smart, DistanceMode.Constant))
+    private val fallDistance = choices("FallDistance",
+        DistanceMode.Smart,
+        arrayOf(DistanceMode.Smart, DistanceMode.Constant)
+    )
+
     private val resetFallDistance by boolean("ResetFallDistance", true)
     private object Blink : ToggleableConfigurable(this, "Blink", false) {
         val disableOnSpoof by boolean("DisableOnSpoof", false)
@@ -69,7 +73,13 @@ internal object NoFallSpoofGround : Choice("SpoofGround") {
                 }
             }
 
-            if (player.fallDistance - (if (resetFallDistance) spoofFallDistance else 0f) >= fallDistance.activeChoice.value) {
+            val newFallDistance = if (resetFallDistance) {
+                spoofFallDistance
+            } else {
+                0f
+            }
+
+            if (player.fallDistance - (newFallDistance) >= fallDistance.activeChoice.value) {
                 // Modify the 'onGround' flag to true, preventing fall damage
                 packet.onGround = true
 

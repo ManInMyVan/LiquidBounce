@@ -22,7 +22,11 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket
 internal object NoFallPacketJump : Choice("PacketJump") {
     private val packetType by enumChoice("PacketType", MovePacketType.FULL,
         arrayOf(MovePacketType.FULL, MovePacketType.POSITION_AND_ON_GROUND))
-    private val fallDistance = choices("FallDistance", DistanceMode.Smart, arrayOf(DistanceMode.Smart, DistanceMode.Constant))
+
+    private val fallDistance = choices("FallDistance", DistanceMode.Smart,
+        arrayOf(DistanceMode.Smart, DistanceMode.Constant)
+    )
+
     private val timing = choices("Timing", Timing.Landing, arrayOf(Timing.Landing, Timing.Falling))
 
     private var falling = false
@@ -31,7 +35,14 @@ internal object NoFallPacketJump : Choice("PacketJump") {
         get() = ModuleNoFall.modes
 
     val tickHandler = handler<PlayerTickEvent> {
-        falling = player.fallDistance - (if (timing.activeChoice is Timing.Falling && Timing.Falling.resetFallDistance) Timing.Falling.packetFallDistance else 0f) >= fallDistance.activeChoice.value
+        val fallDistance = if (timing.activeChoice is Timing.Falling && Timing.Falling.resetFallDistance) {
+            Timing.Falling.packetFallDistance
+        } else {
+            0f
+        }
+
+        falling = player.fallDistance - (fallDistance) >= this.fallDistance.activeChoice.value
+
         if (timing.activeChoice is Timing.Falling && !player.isOnGround && falling) {
             network.sendPacket(packetType.generatePacket().apply {
                 y += 1.0E-9
@@ -41,8 +52,12 @@ internal object NoFallPacketJump : Choice("PacketJump") {
         }
     }
 
+    @Suppress("ComplexCondition")
     val packetHandler = handler<PacketEvent> { event ->
-        if (timing.activeChoice is Timing.Landing && event.packet is PlayerMoveC2SPacket && event.packet.onGround && falling) {
+        if (timing.activeChoice is Timing.Landing
+            && event.packet is PlayerMoveC2SPacket
+            && event.packet.onGround && falling
+        ) {
             falling = false
             network.sendPacket(packetType.generatePacket().apply {
                 x = player.lastX

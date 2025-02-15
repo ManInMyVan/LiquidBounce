@@ -59,10 +59,22 @@ internal object NoFallPacket : Choice("Packet") {
         open fun onPacket() {}
 
         object FallDistance : Filter("FallDistance") {
-            override val isActive
-                get() = player.fallDistance - (if (resetFallDistance) packetFallDistance else 0f) - player.velocity.y >= distance.activeChoice.value && player.age > 20
+            override val isActive: Boolean
+                get() {
+                    val fallDistance = if (resetFallDistance) {
+                        packetFallDistance
+                    } else {
+                        0f
+                    }
 
-            private val distance = choices("Distance", DistanceMode.Smart, arrayOf(DistanceMode.Smart, DistanceMode.Constant))
+                    return player.fallDistance - (fallDistance) - player.velocity.y >= distance.activeChoice.value
+                        && player.age > 20
+                }
+
+            private val distance = choices("Distance", DistanceMode.Smart,
+                arrayOf(DistanceMode.Smart, DistanceMode.Constant)
+            )
+
             val resetFallDistance by boolean("ResetFallDistance", true)
             object Blink : ToggleableConfigurable(this, "Blink", false) {
                 val disableOnSpoof by boolean("DisableOnSpoof", false)
